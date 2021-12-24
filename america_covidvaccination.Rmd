@@ -1,0 +1,228 @@
+---
+title: "COVID-19 Vaccination in America"
+author: "Melisa Di Giacomo"
+output: 
+  html_document:
+    toc: yes
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+# Libraries
+library(knitr)
+library(rnaturalearth)
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(ggiraph)
+library(hrbrthemes)
+library(colormap)
+```
+
+# COVID-19 vaccination in America
+
+Data until December 1st, 2021 on COVID-19 vaccinations in America was collected from [Our World in Data](https://github.com/owid/covid-19-data/tree/master/public/data/vaccinations). 
+
+* `continent`: name of the continent.
+* `location`: name of the country (or region within a country).
+* `date`: date of the observation (2021-12-01).
+* `total_vaccinations`: total number of doses administered. For vaccines that require multiple doses, each individual dose is counted. If a person receives one dose of the vaccine, this metric goes up by 1. If they receive a second dose, it goes up by 1 again. If they receive a third/booster dose, it goes up by 1 again.
+* `population`: total population.
+* `total_vaccinations_per_hundred`: total number of COVID-19 vaccination doses administered per 100 people in the total population
+* `people_fully_vaccinated_per_hundred`: total number of people who received all doses prescribed by the vaccination protocol per 100 people in the total population.
+
+
+
+# South America
+
+
+```{r, message=FALSE}
+southamerica = read.csv("covid_vaccionation_SouthAmerica.csv", header=T)
+
+kable(southamerica, caption = "Table. Data from COVID-19 vaccinations in South America until December 1st, 2021")
+```
+
+```{r, message=FALSE}
+# Geospatial data from rnaturalearth
+world <- sf::st_as_sf(rnaturalearth::countries110)
+```
+
+## Total vaccinations
+
+Hover over the country to see the number of total vaccinations.
+
+
+```{r, message=FALSE}
+SA_total_vaccinations <- dplyr::filter(world, continent=='South America') %>%
+  dplyr::left_join(southamerica %>% dplyr::select(
+    `location`, `total_vaccinations`
+  ) %>% dplyr::rename(name=`location`, total_vaccinations=`total_vaccinations`),
+  by = 'name')
+```
+
+```{r, message=FALSE, warning=FALSE}
+SA_total_vaccinations.centers <- st_centroid(SA_total_vaccinations)
+
+SA_total_vaccinations.spdf <- methods::as(SA_total_vaccinations, 'Spatial')
+SA_total_vaccinations.spdf@data$id <- row.names(SA_total_vaccinations.spdf@data)
+
+SA_total_vaccinations.tidy <- broom::tidy(SA_total_vaccinations.spdf)
+```
+
+
+```{r, message=FALSE}
+SA_total_vaccinations.tidy <- dplyr::left_join(SA_total_vaccinations.tidy, SA_total_vaccinations.spdf@data, by='id')
+
+SA_totalvaccinations_map <- ggplot(SA_total_vaccinations.tidy) +
+  geom_polygon_interactive(
+    color='black',
+    aes(long, lat, group=group, fill=total_vaccinations,
+        tooltip=sprintf("%s<br/>%s",name,total_vaccinations))) +
+ hrbrthemes::theme_ipsum() +
+  colormap::scale_fill_colormap(
+    colormap=colormap::colormaps$viridis, reverse = T) +
+  labs(title='COVID-19 vaccination in South America', subtitle='TOTAL VACCINATIONS', caption='Source: Our World in Data')
+
+ggiraph(code=print(SA_totalvaccinations_map))
+```
+
+In South America, Brazil was the country with the highest total vaccines applied (310M). In second place came Argentina (68M) and the third place went to Colombia (58M).
+
+
+## People fully vaccinated per hundred
+
+Hover over the country to see the number of people fully vaccinated per hundred.
+
+```{r, message=FALSE}
+SA_peoplefullyvaccinated <- dplyr::filter(world, continent=='South America') %>%
+  dplyr::left_join(southamerica %>% dplyr::select(
+    `location`, `people_fully_vaccinated_per_hundred`
+  ) %>% dplyr::rename(name=`location`, fully_vaccinated=`people_fully_vaccinated_per_hundred`),
+  by = 'name')
+```
+
+```{r, message=FALSE, warning=FALSE}
+SA_peoplefullyvaccinated.centers <- st_centroid(SA_peoplefullyvaccinated)
+
+SA_peoplefullyvaccinated.spdf <- methods::as(SA_peoplefullyvaccinated, 'Spatial')
+SA_peoplefullyvaccinated.spdf@data$id <- row.names(SA_peoplefullyvaccinated.spdf@data)
+
+SA_peoplefullyvaccinated.tidy <- broom::tidy(SA_peoplefullyvaccinated.spdf)
+```
+
+```{r, message=FALSE}
+SA_peoplefullyvaccinated.tidy <- dplyr::left_join(SA_peoplefullyvaccinated.tidy, SA_peoplefullyvaccinated.spdf@data, by='id')
+
+SA_peoplefullyvaccinated_map <- ggplot(SA_peoplefullyvaccinated.tidy) +
+  geom_polygon_interactive(
+    color='black',
+    aes(long, lat, group=group, fill=fully_vaccinated,
+        tooltip=sprintf("%s<br/>%s", name, fully_vaccinated))) +
+ hrbrthemes::theme_ipsum() +
+  colormap::scale_fill_colormap(
+    colormap=colormap::colormaps$magma, reverse = TRUE) +
+  labs(title='COVID-19 vaccination in South America', subtitle='PEOPLE FULLY VACCINATED PER HUNDRED UNTIL 2021-12-01', caption='Source: Our World in Data')
+
+ggiraph(code=print(SA_peoplefullyvaccinated_map))
+```
+
+
+The total number of people who received all doses prescribed by the vaccination protocol per 100 people in the total population was analyzed. Chile accounted 84 people fully vaccinated per 100 and was the country with the highest score. Uruguay (76) and Argentina (65) went next. From the countries with data, Bolivia was the one with lowest score (35).
+
+
+# North America
+
+```{r, message=FALSE}
+northamerica = read.csv("covid_vaccionation_NorthAmerica.csv", header=T)
+
+kable(northamerica, caption = "Table. Data from COVID-19 vaccinations in North America until December 1st, 2021")
+```
+
+```{r, message=FALSE}
+# Geospatial data from rnaturalearth
+world <- sf::st_as_sf(rnaturalearth::countries110)
+```
+
+## Total vaccinations
+
+Hover over the country to see the number of total vaccinations.
+
+```{r, message=FALSE}
+NA_total_vaccinations <- dplyr::filter(world, continent=='North America') %>%
+  dplyr::left_join(northamerica %>% dplyr::select(
+    `location`, `total_vaccinations`
+  ) %>% dplyr::rename(name=`location`, total_vaccinations=`total_vaccinations`),
+  by = 'name')
+```
+
+```{r, message=FALSE, warning=FALSE}
+NA_total_vaccinations.centers <- st_centroid(NA_total_vaccinations)
+
+NA_total_vaccinations.spdf <- methods::as(NA_total_vaccinations, 'Spatial')
+NA_total_vaccinations.spdf@data$id <- row.names(NA_total_vaccinations.spdf@data)
+
+NA_total_vaccinations.tidy <- broom::tidy(NA_total_vaccinations.spdf)
+```
+
+
+```{r, message=FALSE}
+NA_total_vaccinations.tidy <- dplyr::left_join(NA_total_vaccinations.tidy, NA_total_vaccinations.spdf@data, by='id')
+
+NA_totalvaccinations_map <- ggplot(NA_total_vaccinations.tidy) +
+  geom_polygon_interactive(
+    color='black',
+    aes(long, lat, group=group, fill=total_vaccinations,
+        tooltip=sprintf("%s<br/>%s",name,total_vaccinations))) +
+ hrbrthemes::theme_ipsum() +
+  colormap::scale_fill_colormap(
+    colormap=colormap::colormaps$viridis, reverse = T) +
+  labs(title='COVID-19 vaccination in North America', subtitle='TOTAL VACCINATIONS', caption='Source: Our World in Data')
+
+ggiraph(code=print(NA_totalvaccinations_map))
+```
+
+In North America, United Stated was the country with the highest total vaccines applied (471M). In second place came Mexico (132M) and the third place went to Canada (60M).
+
+## People fully vaccinated per hundred
+
+Hover over the country to see the number of people fully vaccinated per hundred.
+
+```{r, message=FALSE}
+NA_peoplefullyvaccinated <- dplyr::filter(world, continent=='North America') %>%
+  dplyr::left_join(northamerica %>% dplyr::select(
+    `location`, `people_fully_vaccinated_per_hundred`
+  ) %>% dplyr::rename(name=`location`, fully_vaccinated=`people_fully_vaccinated_per_hundred`),
+  by = 'name')
+```
+
+```{r, message=FALSE, warning=FALSE}
+NA_peoplefullyvaccinated.centers <- st_centroid(NA_peoplefullyvaccinated)
+
+NA_peoplefullyvaccinated.spdf <- methods::as(NA_peoplefullyvaccinated, 'Spatial')
+NA_peoplefullyvaccinated.spdf@data$id <- row.names(NA_peoplefullyvaccinated.spdf@data)
+
+NA_peoplefullyvaccinated.tidy <- broom::tidy(NA_peoplefullyvaccinated.spdf)
+```
+
+
+```{r, message=FALSE}
+NA_peoplefullyvaccinated.tidy <- dplyr::left_join(NA_peoplefullyvaccinated.tidy, NA_peoplefullyvaccinated.spdf@data, by='id')
+
+NA_peoplefullyvaccinated_map <- ggplot(NA_peoplefullyvaccinated.tidy) +
+  geom_polygon_interactive(
+    color='black',
+    aes(long, lat, group=group, fill=fully_vaccinated,
+        tooltip=sprintf("%s<br/>%s",name,fully_vaccinated))) +
+ hrbrthemes::theme_ipsum() +
+  colormap::scale_fill_colormap(
+    colormap=colormap::colormaps$magma, reverse = T) +
+  labs(title='COVID-19 vaccination in North America', subtitle='PEOPLE FULLY VACCINATED PER HUNDRED UNTIL 2021-12-01', caption='Source: Our World in Data')
+
+ggiraph(code=print(NA_peoplefullyvaccinated_map))
+```
+
+In North America the total number of people who received all doses prescribed by the vaccination protocol per 100 people in the total population was also analyzed. Cuba accounted 82 people fully vaccinated per 100 and was the country with the highest score. Canada (76) and Aruba (73) went next. From the countries with data, Jamaica was the one with lowest score (17).
